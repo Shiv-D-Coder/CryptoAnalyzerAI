@@ -1,8 +1,3 @@
-# !pip uninstall crewai -y
-# !pip install crewai 'crewai[tools]'
-# !pip install google-generativeai
-# !pip install langchain-groq
-
 import os
 import json
 import requests
@@ -12,11 +7,9 @@ from google.colab import userdata
 
 # Ensure the API keys are set in the environment variables
 os.environ["GROQ_API_KEY"] = userdata.get('GROQ_API_KEY')
-
 SERP_API_KEY = userdata.get('SERP_API_KEY')
 if SERP_API_KEY is None:
     raise ValueError("SERP_API_KEY secret not found in Colab. Please add it in the secrets section.")
-
 os.environ["SERP_API_KEY"] = SERP_API_KEY
 
 # Initialize the Groq language model
@@ -25,10 +18,10 @@ GROQ_LLM = ChatGroq(model="llama3-70b-8192")
 # Define the function to fetch data from the API
 def fetch_data():
     response = requests.get("https://api.wazirx.com/sapi/v1/tickers/24hr")
-    return response.json()[:20]  # Limit to first 20 entries
+    return response.json()[:5]  # Limit to first 5 entries for simplicity
 
 # Define the agents
-class TestAgents():
+class TestAgents:
     def make_data_fecher(self):
         return Agent(
             role='Data Fecher Agent',
@@ -44,7 +37,7 @@ class TestAgents():
     def make_summary_agent(self):
         return Agent(
             role='Data Summary Agent',
-            goal="""Summarize the Crypto data and compare it with Bitcoin and gives rating from one to 10 on if you should invest in this coin or not.""",
+            goal="""Summarize the Crypto data and compare it with Bitcoin and give a rating from one to ten on if you should invest in this coin or not.""",
             backstory="""You are very good at making decisions on crypto money and analyzing it.""",
             llm=GROQ_LLM,
             verbose=True,
@@ -66,7 +59,7 @@ class TestAgents():
         )
 
 # Define the tasks
-class TestTasks():
+class TestTasks:
     def data_feche(self):
         return Task(
             description="""Fetch data from the API.""",
@@ -85,7 +78,7 @@ class TestTasks():
                 "at": 1716804798000
             }
             """,
-            output_file=f"crypto_data.json",
+            output_file="crypto_data.json",
             agent=data_fecher_agent
         )
 
@@ -115,7 +108,6 @@ class TestTasks():
 
 # Instantiate agents
 agents = TestAgents()
-
 data_fecher_agent = agents.make_data_fecher()
 summary_agent = agents.make_summary_agent()
 max_agent = agents.make_max_agent()
@@ -131,12 +123,11 @@ with open('crypto_data.json', 'w') as f:
 tasks = TestTasks()
 data_fecher_task = tasks.data_feche()
 
-# Process each item individually for summary and max value tasks
+# Create summary and max value tasks for each item
 task_list = []
 for item in data:
     summary_task = tasks.summarize_data(item)
     max_value_task = tasks.extract_max_value(item)
-
     task_list.extend([summary_task, max_value_task])
 
 # Instantiate your crew with a sequential process
@@ -153,36 +144,25 @@ crew = Crew(
 results = crew.kickoff()
 
 print("Crew Work Results:")
-print(results)
+# Access the results using the appropriate methods
+print(results.raw)  # Access the raw output
 
-print(crew.usage_metrics)
+# Inspect the structure of the raw output
+tasks_outputs = results.raw.get('tasks_outputs', [])
+print(f"Tasks Outputs: {tasks_outputs}")
 
-# Create a structured report
-report_lines = []
-for idx, (item, result) in enumerate(zip(data, results['tasks_outputs'])):
-    report_lines.append(f"** REPORT FOR COIN {idx + 1} **")
-    report_lines.append(f"symbol: {item['symbol']}")
-    report_lines.append(f"baseAsset: {item['baseAsset']}")
-    report_lines.append(f"quoteAsset: {item['quoteAsset']}")
-    report_lines.append(f"openPrice: {item['openPrice']}")
-    report_lines.append(f"lowPrice: {item['lowPrice']}")
-    report_lines.append(f"highPrice: {item['highPrice']}")
-    report_lines.append(f"lastPrice: {item['lastPrice']}")
-    report_lines.append(f"volume: {item['volume']}")
-    report_lines.append(f"bidPrice: {item['bidPrice']}")
-    report_lines.append(f"askPrice: {item['askPrice']}")
-    report_lines.append(f"at: {item['at']}")
+# Format the results and write to report.txt
+with open('report.txt', 'w') as report_file:
+    for i, item in enumerate(data):
+        report_file.write(json.dumps(item, indent=4))
+        report_file.write("\nsummary:\n")
 
-    # Extract and add the summary, comparison to Bitcoin, and ratings
-    summary = result.exported_output if result.exported_output else "N/A"
-    comparison_to_bitcoin = "Comparision to bitcoin: " + result.raw_output if result.raw_output else "N/A"
-    ratings = "Ratings: " + (result.raw_output.split(':')[-1] if result.raw_output else "N/A")
+        # Always expect summary and max value outputs
+        summary_output = tasks_outputs[i*2].get('exported_output', 'Summary not available')
+        max_value_output = tasks_outputs[i*2 + 1].get('exported_output', 'Max value not available')
 
-    report_lines.append("\nSummary: " + summary)
-    report_lines.append("Comparision to bitcoin: " + comparison_to_bitcoin)
-    report_lines.append("Ratings: " + ratings)
-    report_lines.append("\n")
+        report_file.write(f"{summary_output}\n")
+        report_file.write(f"{max_value_output}\n")
+        report_file.write("\n")
 
-# Save the report to a file
-with open('report.txt', 'w') as f:
-    f.write("\n".join(report_lines))
+print("Report generated: report.txt")
