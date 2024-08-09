@@ -71,12 +71,3 @@ The project fetches data from the following API endpoint:
 ## Contributing
 
 Feel free to open issues or submit pull requests if you have suggestions for improvements or new features.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-For any questions, please contact [your.email@example.com](mailto:your.email@example.com).
-
