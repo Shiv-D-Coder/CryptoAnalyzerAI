@@ -18,6 +18,41 @@ The project fetches data from the following API endpoint:
 - **URL**: `https://api.wazirx.com/sapi/v1/tickers/24hr`
 - **Description**: Provides 24-hour ticker data for cryptocurrencies.
 
+## Data Format
+
+The data fetched from the API is in the following format:
+
+```json
+[
+    {
+        "symbol": "btcinr",
+        "baseAsset": "btc",
+        "quoteAsset": "inr",
+        "openPrice": "4503151",
+        "lowPrice": "4503151.0",
+        "highPrice": "4503151.0",
+        "lastPrice": "4503151.0",
+        "volume": "0",
+        "bidPrice": "4500000.0",
+        "askPrice": "4512699.0",
+        "at": 1723214981000
+    },
+    {
+        "symbol": "xrpinr",
+        "baseAsset": "xrp",
+        "quoteAsset": "inr",
+        "openPrice": "43.2",
+        "lowPrice": "43.2",
+        "highPrice": "43.2",
+        "lastPrice": "43.2",
+        "volume": "0",
+        "bidPrice": "43.2",
+        "askPrice": "43.99",
+        "at": 1723214981000
+    }
+]
+```
+
 ## Getting Started
 
 ### Prerequisites
