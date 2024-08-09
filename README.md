@@ -49,7 +49,7 @@ The project fetches data from the following API endpoint:
 1. **Run the script:**
 
     ```bash
-    python main.py
+    python crytoAi.py
     ```
 
 2. **Output:**
